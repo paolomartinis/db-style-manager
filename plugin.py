@@ -306,14 +306,8 @@ class DbStyleManager:
         :param layer: The map layer.
         :type: QgsMapLayer
         """
-        manager = layer.styleManager()
-        existing_styles = manager.styles()
-        for s in existing_styles:
-            manager.removeStyle(s)
 
-        manager.currentStyle()
-        manager.renameStyle(manager.currentStyle(), '')
-        manager.renameStyle('', 'default')
+        # PM: changed and putted there
         styles = layer.listStylesInDatabase()
         if len(styles) == 0:
             # No style for all layers in the database, we do nothing
@@ -324,6 +318,16 @@ class DbStyleManager:
             # No style for this layer in the database, we do nothing
             return
 
+        manager = layer.styleManager()
+        existing_styles = manager.styles()
+        for s in existing_styles:
+            manager.removeStyle(s)
+
+        manager.currentStyle()
+        # PM: changed to 'garbage' instead of ''
+        manager.renameStyle(manager.currentStyle(), 'garbage')
+        #manager.renameStyle('', 'default')
+
         related_styles_idx = styles[1][0:number_styles]
         related_styles_names = styles[2][0:number_styles]
         related_styles_description = styles[3][0:number_styles]
@@ -333,13 +337,20 @@ class DbStyleManager:
             # description = style[2]
             manager.addStyle(style[1], QgsMapLayerStyle(xml_style))
 
+        # PM: set to default
+        loaded_styles = manager.styles()
+        for s in (x for x in loaded_styles if x=='default'):
+            manager.setCurrentStyle(s)
+
+        # PM: moved and refactored to 'garbage'
+        manager.removeStyle('garbage')
+
         # Deactivated in 0.3, because in QGIS 2.18 we can't know which one is the default style
         # if len(number_styles) > 0:
         #     # If we have at least one style, we take the first one for the title and name
         #     layer.setTitle(related_styles[0][2])
         #     layer.setName(related_styles[0][2])
 
-        manager.removeStyle('default')
         if len(list(related_styles)) >= 1:
             # We got one layer, we can set it by default in QGIS
             manager.setCurrentStyle(related_styles[0][1])
